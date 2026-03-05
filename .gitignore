@@ -11,3 +11,6 @@ wheels/
 
 # index_dir
 index_dir/
+
+# Environment variables
+.env
