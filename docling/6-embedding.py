@@ -73,8 +73,8 @@ qdrant.upload_collection(
 result = qdrant.query_points(
     collection_name="docling_paper",
     query=models.Document(
-        text="What is the main contribution of the paper?"
-        model=MODEL_NAME
+        text="What is the main contribution of the paper?",
+        model=MODEL_NAME,
     )
 ).points
 
