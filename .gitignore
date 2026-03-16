@@ -17,3 +17,6 @@ index_dir/
 
 # output files
 output_images/
+
+# qdrant storage
+projeto/qdrant_storage/
