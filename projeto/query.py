@@ -1,27 +1,51 @@
 import os
 
 from dotenv import load_dotenv
-from fastembed import TextEmbedding
+from fastembed import LateInteractionTextEmbedding, SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
 
 load_dotenv()
 
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+DENSE_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+SPARSE_MODEL = "Qdrant/bm42-all-minilm-l6-v2-attentions"
+COLBERT_MODEL = "colbert-ir/colbertv2.0"
 COLLECTION_NAME = "financial"
 
-qdrant = QdrantClient(url=os.getenv("QDRANT_URL"))
-model = TextEmbedding(MODEL_NAME)
-
-query_text = "what are the ain financial risks?"
-query_embedding = list(model.passage_embed(query_text))[0].tolist()
-
-result = qdrant.query_points(
-    collection_name=COLLECTION_NAME,
-    query=models.Document(text=query_text, model=MODEL_NAME),
-    limit=5,
+qdrant = QdrantClient(
+    url=os.getenv("QDRANT_URL"),
+    api_key=os.getenv("QDRANT_API_KEY"),
 )
 
-for point in result.points:
-    print(f"Score: {point.score:.4f}")
-    print(f"Text: {point.payload['text']}")
+dense_model = TextEmbedding(DENSE_MODEL)
+sparse_model = SparseTextEmbedding(SPARSE_MODEL)
+colbert_model = LateInteractionTextEmbedding(COLBERT_MODEL)
+
+query_text = "what are the main financial risks?"
+query_dense = list(dense_model.query_embed([query_text]))[0].tolist()
+query_sparse = list(sparse_model.query_embed([query_text]))[0].as_object()
+query_colbert = list(colbert_model.query_embed([query_text]))[0].tolist()
+
+results = qdrant.query_points(
+    collection_name=COLLECTION_NAME,
+    prefetch=[
+        {
+            "prefetch": [
+                {"query": query_dense, "using": "dense", "limit": 10},
+                {"query": query_sparse, "using": "sparse", "limit": 10},
+            ],
+            "query": models.FusionQuery(fusion=models.Fusion.RRF),
+            "limit": 20,
+        }
+    ],
+    query=query_colbert,
+    using="colbert",
+    limit=3,
+)
+
+max_score = max(result.score for result in results.points)
+
+for r in results.points:
+    normalized_score = r.score / max_score
+    print(f"Score: {normalized_score}")
+    print(f"Texto: {r.payload['text'][:100]}...")
     print("-" * 80)
