@@ -4,6 +4,7 @@ import uuid
 from dotenv import load_dotenv
 from fastembed import LateInteractionTextEmbedding, SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
+from utils.semantic_chunker import SemanticChunker
 
 load_dotenv()
 
@@ -12,6 +13,7 @@ SPARSE_MODEL_NAME = "Qdrant/bm42-all-minilm-l6-v2-attentions"
 COLBERT_MODEL_NAME = "colbert-ir/colbertv2.0"
 COLLECTION_NAME = "financial"
 FILE_PATH = "./projeto/financial_file.md"
+MAX_TOKENS = 300
 
 qdrant = QdrantClient(url=os.getenv("QDRANT_URL"))
 
@@ -45,8 +47,8 @@ qdrant.create_collection(
 with open(FILE_PATH, "r") as f:
     content = f.read()
 
-paragraphs = content.split("\n\n")
-chunks = [p.strip() for p in paragraphs if len(p.strip()) > 50]
+
+chunks = SemanticChunker(max_tokens=MAX_TOKENS).create_chunks(content)
 
 dense_model = TextEmbedding(DENSE_MODEL_NAME)
 sparse_model = SparseTextEmbedding(SPARSE_MODEL_NAME)
@@ -64,7 +66,7 @@ for chunk in chunks:
         id=str(uuid.uuid4()),
         vector={
             "dense": dense_emb,
-            "sparse": sparse_emb,
+            "sparse_vector": sparse_emb,
             "colbert": colbert_emb,
         },
         payload={"text": chunk, "source": "financial_file.md"},

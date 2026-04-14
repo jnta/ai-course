@@ -31,7 +31,7 @@ results = qdrant.query_points(
         {
             "prefetch": [
                 {"query": query_dense, "using": "dense", "limit": 10},
-                {"query": query_sparse, "using": "sparse", "limit": 10},
+                {"query": query_sparse, "using": "sparse_ vector", "limit": 10},
             ],
             "query": models.FusionQuery(fusion=models.Fusion.RRF),
             "limit": 20,
