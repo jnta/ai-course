@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "docling>=2.77.0",
+    "edgartools>=5.30.0",
     "groq>=1.0.0",
     "hdbscan>=0.8.42",
     "langextract>=1.1.1",
